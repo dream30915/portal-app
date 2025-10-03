@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Portal | Auth + Profile + Properties</title>
+<meta name="description" content="Supabase Auth & Profile & Properties Portal" />
+<style>
+/* (ย่อ CSS เพื่อไม่ยาวเกิน – ถ้าคุณอยากได้เวอร์ชันเต็มละเอียด ผมส่งเพิ่มได้) */
+:root { --bg:#0f1115;--bg-alt:#181b21;--bg-alt2:#1f252d;--border:#2c333d;--border-soft:#313a45;
+ --text:#f1f5f9;--text-dim:#94a3b8;--accent:#3b82f6;--accent-hover:#2563eb;
+ --danger:#dc2626;--warn:#f59e0b;--success:#10b981;--radius:14px;--radius-sm:6px;
+ --focus-ring:0 0 0 3px rgba(59,130,246,.35);--grad:linear-gradient(135deg,#1e3a8a,#3b82f6,#06b6d4);
+ --shadow:0 4px 14px -2px rgba(0,0,0,.5);}
+[data-theme="light"] {--bg:#f5f7fa;--bg-alt:#ffffff;--bg-alt2:#f1f5f9;--border:#d0d7e2;--border-soft:#e2e8f0;
+ --text:#0f172a;--text-dim:#475569;--grad:linear-gradient(135deg,#2563eb,#06b6d4,#3b82f6);--shadow:0 4px 16px -2px rgba(0,0,0,.15);}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;display:flex;flex-direction:column;}
+h3{margin:0 0 .7rem;font-weight:600;letter-spacing:.5px;}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 26px;background:var(--bg-alt);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
+header .brand{font-size:1.05rem;font-weight:600;background:var(--grad);-webkit-background-clip:text;color:transparent;letter-spacing:.7px;}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;padding:4px 10px;background:var(--bg-alt2);border:1px solid var(--border);border-radius:999px;color:var(--text-dim);}
+.container{width:100%;max-width:1360px;margin:0 auto;padding:28px clamp(16px,2.2vw,40px) 80px;flex:1;display:grid;gap:28px;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));}
+.panel{background:var(--bg-alt);border:1px solid var(--border);border-radius:14px;padding:22px 24px 26px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;}
+.panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.divider{height:1px;background:var(--border-soft);margin:4px 0 6px;}
+label{display:flex;flex-direction:column;gap:6px;font-size:.65rem;font-weight:600;letter-spacing:.5px;color:var(--text-dim);text-transform:uppercase;}
+input,select{background:var(--bg-alt2);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:6px;font-size:.85rem;transition:.25s;}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:var(--focus-ring);}
+.actions-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;}
+button{cursor:pointer;background:var(--accent);color:#fff;font-weight:600;font-size:.8rem;padding:11px 16px;border:none;border-radius:6px;letter-spacing:.4px;display:inline-flex;align-items:center;gap:8px;transition:.25s;}
+button:hover{background:var(--accent-hover);}button.outline{background:var(--bg-alt2);color:var(--text-dim);border:1px solid var(--border);}button.outline:hover{color:var(--text);}
+button:disabled{opacity:.55;cursor:not-allowed;}
+.role-badge{font-size:.6rem;padding:4px 8px;border-radius:999px;background:var(--bg-alt2);border:1px solid var(--border);font-weight:600;}
+.role-USER{color:var(--text-dim);} .role-ADMIN{color:var(--warn);border-color:var(--warn);} .role-SUPER_ADMIN{color:var(--success);border-color:var(--success);}
+pre{background:var(--bg-alt2);border:1px solid var(--border);padding:14px 16px;border-radius:6px;font-size:.7rem;max-height:400px;overflow:auto;margin:0;}
+.log-toggle{position:fixed;bottom:18px;right:18px;background:var(--bg-alt2);border:1px solid var(--border);width:54px;height:54px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;border-radius:16px;cursor:pointer;box-shadow:var(--shadow);}
+.logs-drawer{position:fixed;bottom:90px;right:18px;width:min(560px,92vw);height:400px;background:var(--bg-alt);border:1px solid var(--border);border-radius:22px;display:flex;flex-direction:column;box-shadow:0 10px 40px -6px rgba(0,0,0,.55);overflow:hidden;transform:translateY(12px);opacity:0;pointer-events:none;transition:.35s;backdrop-filter:blur(6px);}
+.logs-drawer.active{transform:translateY(0);opacity:1;pointer-events:auto;}
+.log-line{font-size:.65rem;font-family:ui-monospace,monospace;border-left:3px solid var(--border);padding:4px 8px;margin:0 0 6px;background:var(--bg-alt2);border-radius:6px;white-space:pre-wrap;word-break:break-word;}
+.log-line.STATUS{border-color:var(--accent);} .log-line.ERROR{border-color:var(--danger);color:#fca5a5;} .log-line.INFO{border-color:var(--accent);}
+.avatar{width:60px;height:60px;background:var(--bg-alt2);border:1px solid var(--border);border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--accent);}
+.profile-grid{display:grid;gap:18px;grid-template-columns:70px 1fr;}
+.toast{position:fixed;top:18px;right:18px;background:var(--bg-alt2);border:1px solid var(--border);padding:12px 16px;border-radius:6px;font-size:.75rem;box-shadow:var(--shadow);opacity:0;transform:translateY(-10px);pointer-events:none;transition:.35s;z-index:120;}
+.toast.show{opacity:1;transform:translateY(0);}
+.tag{font-size:.55rem;text-transform:uppercase;padding:4px 8px;background:var(--bg-alt2);border:1px solid var(--border);border-radius:6px;letter-spacing:.6px;color:var(--text-dim);}
+.theme-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--border);background:var(--bg-alt2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.05rem;color:var(--text-dim);}
+.theme-btn:hover{color:var(--text);background:var(--bg-alt);}
+@media (max-width:900px){.container{padding-top:18px;}header{flex-wrap:wrap;gap:12px;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">PRO PORTAL</div>
+  <div class="toolbar">
+    <div id="sessionBadge" class="pill">No Session</div>
+    <button id="themeToggle" class="theme-btn" title="Toggle Theme">🌙</button>
+    <button id="logoutBtn" class="outline" disabled>Logout</button>
+  </div>
+</header>
+
+<main class="container">
+  <!-- Auth -->
+  <section class="panel" id="authPanel">
+    <div class="panel-header"><h3>Authentication</h3><span class="tag">SECURE</span></div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">
+      <label style="flex:1">Email <input id="email" type="email" placeholder="you@example.com"></label>
+      <label style="flex:1">Password <input id="password" type="password" placeholder="••••••••"></label>
+    </div>
+    <div class="actions-row">
+      <button id="signupBtn">Sign Up</button>
+      <button id="signinBtn" class="outline">Sign In</button>
+      <button id="ensureBtn" class="outline" disabled>Ensure Profile</button>
+      <button id="refreshProfileBtn" class="outline" disabled>Refresh Profile</button>
+    </div>
+    <small class="muted">Sign Up / Sign In แล้วระบบจะสร้าง profile</small>
+  </section>
+
+  <!-- Profile -->
+  <section class="panel" id="profilePanel">
+    <div class="panel-header"><h3>My Profile</h3><span class="tag">RLS</span></div>
+    <div class="divider"></div>
+    <div id="profileContent"><div class="muted">ยังไม่ได้ล็อกอิน</div></div>
+    <div class="actions-row" style="margin-top:8px;">
+      <input id="promoteUserId" placeholder="User UUID" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-alt2);color:var(--text);font-size:.55rem;" />
+      <select id="promoteRole" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-alt2);color:var(--text);font-size:.6rem;">
+        <option value="ADMIN">ADMIN</option><option value="SUPER_ADMIN">SUPER_ADMIN</option>
+      </select>
+      <button id="promoteBtn" class="outline" disabled>Promote</button>
+    </div>
+    <small class="muted">Promote ใช้ได้เฉพาะ SUPER_ADMIN</small>
+  </section>
+
+  <!-- Display Name -->
+  <section class="panel">
+    <div class="panel-header"><h3>Display Name</h3><span class="tag">UPDATE</span></div>
+    <div class="divider"></div>
+    <label>New Display Name <input id="displayNameInput" type="text" disabled></label>
+    <div class="actions-row"><button id="updateNameBtn" disabled>Update Name</button></div>
+  </section>
+
+  <!-- System -->
+  <section class="panel">
+    <div class="panel-header"><h3>System Info</h3><span class="tag">INFO</span></div>
+    <div class="divider"></div>
+    <pre id="systemInfo"></pre>
+  </section>
+
+  <!-- Properties -->
+  <section class="panel" id="propertiesPanel">
+    <div class="panel-header"><h3>Properties</h3><span class="tag">LIST</span></div>
+    <div class="divider"></div>
+    <div class="actions-row" style="margin-bottom:6px;">
+      <button id="loadPropsBtn" class="outline">Load Properties</button>
+      <button id="addPropBtn" class="outline" disabled>Add Property (ADMIN+)</button>
+      <button id="myFavBtn" class="outline" disabled>My Favorites</button>
+    </div>
+    <div id="propsList" class="muted" style="font-size:.65rem;">(ยังไม่ได้โหลด)</div>
+  </section>
+</main>
+
+<button id="logToggle" class="log-toggle" title="Logs">⌘</button>
+<div id="logsDrawer" class="logs-drawer">
+  <div class="drawer-header">
+    <strong>Logs</strong>
+    <div style="display:flex;gap:8px;">
+      <button id="clearLogsBtn" class="outline" style="padding:6px 10px;font-size:.55rem;">Clear</button>
+      <button id="closeLogsBtn" class="outline" style="padding:6px 10px;font-size:.55rem;">Close</button>
+    </div>
+  </div>
+  <div class="drawer-body" id="logsBody"></div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+/* ======= แก้ตรงนี้ให้เป็นของคุณ ======= */
+const SUPABASE_URL = 'https://mzmswzocehujfgiexgpl.supabase.co';
+const SUPABASE_ANON_KEY = '.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16bXN3em9jZWh1amZnaWV4Z3BsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0MzEyMjAsImV4cCI6MjA3NTAwNzIyMH0.srrQXHziSfCjvFrGuPGpkTW2wNl9vU1r_C3GDDES-ZA ';
+/* ======================================= */
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true}
+});
+const el=id=>document.getElementById(id);
+const emailEl=el('email'),passEl=el('password'),signupBtn=el('signupBtn'),signinBtn=el('signinBtn'),
+  ensureBtn=el('ensureBtn'),refreshBtn=el('refreshProfileBtn'),logoutBtn=el('logoutBtn'),
+  profileContent=el('profileContent'),displayNameInput=el('displayNameInput'),updateNameBtn=el('updateNameBtn'),
+  sessionBadge=el('sessionBadge'),logToggle=el('logToggle'),logsDrawer=el('logsDrawer'),
+  logsBody=el('logsBody'),clearLogsBtn=el('clearLogsBtn'),closeLogsBtn=el('closeLogsBtn'),
+  toastEl=el('toast'),systemInfo=el('systemInfo'),themeToggle=el('themeToggle'),
+  loadPropsBtn=el('loadPropsBtn'),addPropBtn=el('addPropBtn'),myFavBtn=el('myFavBtn'),propsList=el('propsList'),
+  promoteBtn=el('promoteBtn'),promoteUserId=el('promoteUserId'),promoteRole=el('promoteRole');
+let currentProfile=null;
+
+function log(type,msg){const d=document.createElement('div');d.className='log-line '+type;d.textContent='['+new Date().toLocaleTimeString()+'] ('+type+') '+msg;logsBody.prepend(d);}
+function status(m){log('STATUS',m);showToast(m);}
+function showToast(m,t=3000){toastEl.textContent=m;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),t);}
+function roleBadge(r){return '<span class="role-badge role-'+r+'">'+r+'</span>';}
+function sanitize(s=''){return s.replace(/[<>]/g,'');}
+themeToggle.addEventListener('click',()=>{const root=document.documentElement;const cur=root.getAttribute('data-theme');root.setAttribute('data-theme',cur==='dark'?'light':'dark');themeToggle.textContent=cur==='dark'?'🌙':'☀️';});
+logToggle.addEventListener('click',()=>logsDrawer.classList.toggle('active'));
+clearLogsBtn.addEventListener('click',()=>logsBody.innerHTML='');
+closeLogsBtn.addEventListener('click',()=>logsDrawer.classList.remove('active'));
+systemInfo.textContent=`SUPABASE_URL: ${SUPABASE_URL}
+Anon Key (first 20): ${SUPABASE_ANON_KEY.slice(0,20)}...
+Persist Session: true`;
+
+supabase.auth.onAuthStateChange(async (_e,s)=>{
+  if(s?.user){
+    sessionBadge.textContent='Session Active';sessionBadge.style.color='var(--success)';
+    logoutBtn.disabled=false;ensureBtn.disabled=false;refreshBtn.disabled=false;
+    displayNameInput.disabled=false;updateNameBtn.disabled=false;myFavBtn.disabled=false;
+    await ensureProfile();await loadProfile();
+    setTimeout(()=>{
+      if(currentProfile?.role==='ADMIN'||currentProfile?.role==='SUPER_ADMIN') addPropBtn.disabled=false;
+      if(currentProfile?.role==='SUPER_ADMIN') promoteBtn.disabled=false;
+    },200);
+  } else {
+    sessionBadge.textContent='No Session';sessionBadge.style.color='var(--text-dim)';
+    logoutBtn.disabled=true;ensureBtn.disabled=true;refreshBtn.disabled=true;displayNameInput.disabled=true;updateNameBtn.disabled=true;
+    addPropBtn.disabled=true;myFavBtn.disabled=true;promoteBtn.disabled=true;currentProfile=null;
+    profileContent.innerHTML='<div class="muted">ยังไม่ได้ล็อกอิน</div>';propsList.textContent='(ยังไม่ได้โหลด)';
+  }
+});
+
+async function signUp(){
+  status('Signing up...');
+  const {error}=await supabase.auth.signUp({email:emailEl.value.trim(),password:passEl.value});
+  if(error){status('Signup error: '+error.message);return;}
+  status('Signup success');await ensureProfile();await loadProfile();
+}
+async function signIn(){
+  status('Signing in...');
+  const {error}=await supabase.auth.signInWithPassword({email:emailEl.value.trim(),password:passEl.value});
+  if(error){status('Login error: '+error.message);return;}
+  status('Login success');await ensureProfile();await loadProfile();
+}
+async function ensureProfile(){
+  const {error}=await supabase.rpc('ensure_profile');
+  if(error){status('ensure_profile error: '+error.message);return;}
+  status('Profile ensured');
+}
+async function loadProfile(){
+  const {data:u}=await supabase.auth.getUser();
+  if(!u?.user){status('No user');return;}
+  const {data, error}=await supabase.from('profiles')
+    .select('id,role,display_name,created_at').eq('id',u.user.id).maybeSingle();
+  if(error){status('Profile fetch error: '+error.message);return;}
+  currentProfile=data;renderProfile();status('Profile loaded');
+}
+function renderProfile(){
+  if(!currentProfile){profileContent.innerHTML='<div class="muted">ยังไม่ได้ล็อกอิน</div>';return;}
+  const cp=currentProfile;const initials=(cp.display_name||'U?').split(/\s+/).map(x=>x[0]?.toUpperCase()).join('').slice(0,2);
+  displayNameInput.value=cp.display_name||'';
+  profileContent.innerHTML=`<div class="profile-grid">
+    <div class="avatar">${initials}</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <strong>${sanitize(cp.display_name||'(no name)')}</strong>${roleBadge(cp.role)}
+      </div>
+      <div class="muted" style="font-size:.55rem;">ID: ${cp.id}</div>
+      <div class="muted" style="font-size:.55rem;">Created: ${new Date(cp.created_at).toLocaleString()}</div>
+    </div>
+  </div>`;
+  if(cp.role==='SUPER_ADMIN') promoteBtn.disabled=false;
+}
+async function updateName(){
+  if(!currentProfile){showToast('No profile');return;}
+  const newName=displayNameInput.value.trim();if(!newName){showToast('ชื่อว่าง');return;}
+  const {error}=await supabase.from('profiles').update({display_name:newName}).eq('id',currentProfile.id);
+  if(error){showToast('Update error: '+error.message);return;}
+  showToast('Name updated');await loadProfile();
+}
+async function logout(){status('Signing out...');await supabase.auth.signOut();status('Signed out');}
+async function loadProperties(mode='all'){
+  propsList.textContent='Loading...';
+  let q=supabase.from('properties').select('id,code,title,location,price,published,created_at');
+  if(mode==='fav'){
+    const {data:u}=await supabase.auth.getUser();
+    if(!u?.user){propsList.textContent='(ต้องล็อกอิน)';return;}
+    const {data:favs,error:fErr}=await supabase.from('favorites').select('property_id').eq('user_id',u.user.id);
+    if(fErr){propsList.textContent='Fav error: '+fErr.message;return;}
+    if(!favs?.length){propsList.textContent='(ยังไม่มี Favorites)';return;}
+    q=q.in('id',favs.map(f=>f.property_id));
+  }
+  const {data, error}=await q.order('created_at',{ascending:false}).limit(100);
+  if(error){propsList.textContent='Error: '+error.message;return;}
+  if(!data?.length){propsList.textContent='(ไม่มีรายการ)';return;}
+  let favIds=[];const {data:u2}=await supabase.auth.getUser();
+  if(u2?.user){
+    const {data:f2}=await supabase.from('favorites').select('property_id').eq('user_id',u2.user.id);
+    favIds=(f2||[]).map(f=>f.property_id);
+  }
+  propsList.innerHTML=data.map(p=>{
+    const fav=favIds.includes(p.id);
+    return `<div style="border:1px solid var(--border);padding:11px 14px;border-radius:10px;margin-bottom:10px;background:var(--bg-alt2);">
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <strong>${sanitize(p.title)}</strong>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="role-badge ${p.published?'role-ADMIN':'role-USER'}" style="color:${p.published?'var(--success)':'var(--text-dim)'}">${p.published?'PUB':'HIDE'}</span>
+          <button class="outline" data-prop="${p.id}" data-act="${fav?'unfav':'fav'}" style="padding:4px 10px;font-size:.6rem;">
+            ${fav?'★ Fav':'☆ Fav'}
+          </button>
+        </div>
+      </div>
+      <div class="muted" style="font-size:.6rem;">Code: ${p.code} • ฿${Number(p.price||0).toLocaleString()} • ${new Date(p.created_at).toLocaleDateString()}</div>
+      <div class="muted" style="font-size:.6rem;">${sanitize(p.location)}</div>
+    </div>`;
+  }).join('');
+  propsList.querySelectorAll('button[data-prop]').forEach(btn=>{
+    btn.addEventListener('click',async ()=>{
+      const id=btn.dataset.prop, act=btn.dataset.act;
+      const {data:u}=await supabase.auth.getUser();if(!u?.user){showToast('ต้องล็อกอิน');return;}
+      if(act==='fav'){const {error:e1}=await supabase.from('favorites').insert({user_id:u.user.id,property_id:id});if(e1){showToast(e1.message);return;}showToast('Fav added');}
+      else {const {error:e2}=await supabase.from('favorites').delete().eq('user_id',u.user.id).eq('property_id',id);if(e2){showToast(e2.message);return;}showToast('Fav removed');}
+      loadProperties(mode);
+    });
+  });
+}
+async function addPropertyQuick(){
+  if(!(currentProfile?.role==='ADMIN'||currentProfile?.role==='SUPER_ADMIN')){showToast('Need ADMIN');return;}
+  const code='PX-'+Math.random().toString(36).substring(2,7).toUpperCase();
+  const payload={code,title:'Property '+code,location:'Bangkok',price:Math.floor(5_000_000+Math.random()*5_000_000),published:true};
+  const {error}=await supabase.from('properties').insert(payload);
+  if(error){showToast('Add error: '+error.message);return;}
+  showToast('Added '+code);loadProperties();
+}
+async function promoteUser(){
+  if(currentProfile?.role!=='SUPER_ADMIN'){showToast('Need SUPER_ADMIN');return;}
+  const target=promoteUserId.value.trim(), newRole=promoteRole.value;
+  if(!target){showToast('ใส่ UUID');return;}
+  const {error}=await supabase.from('profiles').update({role:newRole}).eq('id',target);
+  if(error){showToast('Promote error: '+error.message);return;}
+  showToast('Promoted!');
+  if(target===currentProfile.id) await loadProfile();
+}
+
+signupBtn.addEventListener('click',signUp);
+signinBtn.addEventListener('click',signIn);
+ensureBtn.addEventListener('click',()=>{ensureProfile();loadProfile();});
+refreshBtn.addEventListener('click',loadProfile);
+logoutBtn.addEventListener('click',logout);
+updateNameBtn.addEventListener('click',updateName);
+loadPropsBtn.addEventListener('click',()=>loadProperties());
+addPropBtn.addEventListener('click',addPropertyQuick);
+myFavBtn.addEventListener('click',()=>loadProperties('fav'));
+promoteBtn.addEventListener('click',promoteUser);
+
+(async()=>{
+  const {data}=await supabase.auth.getSession();
+  if(data?.session){
+    status('Session found');
+    await ensureProfile();await loadProfile();
+    logoutBtn.disabled=false;ensureBtn.disabled=false;refreshBtn.disabled=false;
+    displayNameInput.disabled=false;updateNameBtn.disabled=false;myFavBtn.disabled=false;
+    if(currentProfile?.role==='ADMIN'||currentProfile?.role==='SUPER_ADMIN') addPropBtn.disabled=false;
+    if(currentProfile?.role==='SUPER_ADMIN') promoteBtn.disabled=false;
+  } else {
+    status('No existing session');
+  }
+})();
+</script>
+</body>
+</html>
